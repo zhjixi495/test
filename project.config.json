@@ -10,7 +10,7 @@
 	"miniprogramRoot": "./dist/",
 	"compileType": "miniprogram",
 	"appid": "wx6d8a92e6b3c016e4",
-	"projectname": "blue-tooth-test",
+	"projectname": "blueTooth-test",
 	"condition": {
 		"search": {
 			"current": -1,

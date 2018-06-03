@@ -55,6 +55,10 @@ export default {
 			onConnect: function () {
 				// 如果 keepAlive 为`true`的话，需要自己手动在 sendData 成功后执行 `return this.trigger('success', true)` 以触发 `finish` 状态以进入关闭蓝牙连接和蓝牙适配器操作
 				this.sendData('01').then(res => this.sendData('02')).then(res => this.sendData('03')).then(res => this.trigger('success'))
+			},
+			onNotify: function (value) {
+				// 收到蓝牙设备传过来的值
+				console.log(value)
 			}
 		})
 

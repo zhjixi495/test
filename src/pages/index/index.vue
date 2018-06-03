@@ -4,7 +4,7 @@
 			<button size='mini' @click="startConnect()">开始搜索</button>
 			<button size='mini' @click="stopBluetoothDevicesDiscovery()">停止搜索</button>
 		</view> -->
-		<view class='list' v-if="devices.length > 0">
+		<!-- <view class='list' v-if="devices.length > 0">
 			<card 
 				v-for="(device, index) in devices" 
 				:key="device.deviceId" 
@@ -13,12 +13,14 @@
 				:isConnectingDevice="isConnectingDevice" 
 				@startConnectDevices="startConnectDevices">
 			</card>
-		</view>
+		</view> -->
+		<view></view>
 	</div>
 </template>
 
 <script>
 import card from '@/components/card'
+import Bluetooth from '../../utils/ble'
 
 export default {
 	data () {
@@ -31,7 +33,32 @@ export default {
 	},
 	created () {
 		// 调用应用实例的方法获取全局数据
-		this.startConnect()
+		// this.startConnect()
+		const bluebooth = new Bluetooth({   // configOptions 参考下方的API
+			debug: true,
+			keepAlive: true,    // 保持持续链接状态
+			// 必须配置 `connectOptions` 中的 `deviceName` 和 `services` 以匹配你想匹配的蓝牙设备
+			connectOptions: {
+				interval: 0,
+				services: [
+					// "00006000-0000-1000-8000-00805F9B34FB",
+					// "00005752-0000-1000-8000-00805F9B34FB",
+					// "0000422D-0000-1000-8000-00805F9B34FB",
+					// "0000454C-0000-1000-8000-00805F9B34FB"
+					// "6E400001-b5A3-F393-E0A9-E50E24DCCA9E"
+				], // your device services array
+				allowDuplicatesKey: false,
+				// deviceName: 'TD_7B74', // device name
+				deviceName: '', // device name
+				// characteristicId: ''
+			},
+			onConnect: function () {
+				// 如果 keepAlive 为`true`的话，需要自己手动在 sendData 成功后执行 `return this.trigger('success', true)` 以触发 `finish` 状态以进入关闭蓝牙连接和蓝牙适配器操作
+				this.sendData('01').then(res => this.sendData('02')).then(res => this.sendData('03')).then(res => this.trigger('success'))
+			}
+		})
+
+		bluebooth.start();
 	},
 	methods: {
 		// 开始
@@ -57,7 +84,6 @@ export default {
 				}
 			})
 			wx.onBluetoothAdapterStateChange(res => {
-				console.log(res)
 				if (res.available) {
 					this.getBluetoothAdapterState()
 				}
@@ -89,10 +115,9 @@ export default {
 				title: '蓝牙搜索'
 			})
 			wx.startBluetoothDevicesDiscovery({
-				services: [],
+				// services: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'],
 				allowDuplicatesKey: false,
 				success: res => {
-					console.log(res)
 					if (!res.isDiscovering) {
 						this.getBluetoothAdapterState()
 					} else {
@@ -147,25 +172,48 @@ export default {
 			})
 		},
 		// 连接成功后根据deiviceId获取设备的所有服务
-		getService(deviceId) {
+		getService() {
+			let deviceId = 'F2:13:AF:B8:7B:74'
 			// 监听蓝牙连接(重连)
-			wx.onBLEConnectionStateChange(res => {
-				this.isConnectingDevice = ''
-				console.log(`device ${res.deviceId} state has changed, connected: ${res.connected}`)
-				wx.showToast({
-					title: '已断开',
-					duration: 2000
-				})
-				setTimeout(() => {
-					wx.hideToast()
-				}, 2000)
-			});
+			// wx.onBLEConnectionStateChange(res => {
+			// 	this.isConnectingDevice = ''
+			// 	console.log(`device ${res.deviceId} state has changed, connected: ${res.connected}`)
+			// 	wx.showToast({
+			// 		title: '已断开',
+			// 		duration: 2000
+			// 	})
+			// 	setTimeout(() => {
+			// 		wx.hideToast()
+			// 	}, 2000)
+			// });
 			// 获取蓝牙设备service值
 			wx.getBLEDeviceServices({
 				deviceId: deviceId,
 				success: res => {
+					wx.showToast({
+						title: '找到指定设备!',
+						duration: 2000
+					})
+					setTimeout(() => {
+						wx.hideToast()
+					}, 2000)
 					console.log('获取蓝牙设备service值', res)
 					this.getCharacter(deviceId, res.services)
+				},
+				fail: res => {
+					wx.showToast({
+						title: '找不到指定设备!',
+						duration: 1000
+					})
+					setTimeout(() => {
+						wx.hideToast()
+					}, 1000)
+				},
+				complete: res => {
+					if (res.errMsg != 0) {
+						this.getService()
+					}
+					console.log(res)
 				}
 			})
 		},
